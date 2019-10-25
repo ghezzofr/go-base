@@ -1,4 +1,4 @@
-module github.com/heroku/go-getting-star
+module github.com/heroku/go-base
 
 go 1.12
 
