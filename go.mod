@@ -1,14 +1,20 @@
+// +heroku goVersion go1.12
 module github.com/heroku/go-base
 
 go 1.12
 
 require (
-	github.com/gin-gonic/gin v0.0.0-20150626140855-4cc2de6207f4
-	github.com/heroku/x v0.0.0-20171004170240-705849e307dd
-	github.com/manucorporat/sse v0.0.0-20150604091100-c142f0f1baea // indirect
-	github.com/mattn/go-colorable v0.0.0-20150625154642-40e4aedc8fab // indirect
-	github.com/mattn/go-isatty v0.0.0-20150814002629-7fcbc72f853b // indirect
-	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/net v0.0.0-20150629084131-d9558e5c97f8 // indirect
-	gopkg.in/bluesuncorp/validator.v5 v5.9.1 // indirect
+	github.com/appleboy/gin-jwt/v2 v2.6.2
+	github.com/gin-contrib/sse v0.1.0 // indirect
+	github.com/gin-gonic/gin v1.4.0
+	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/heroku/x v0.0.11
+	github.com/jinzhu/gorm v1.9.11
+	github.com/json-iterator/go v1.1.8 // indirect
+	github.com/lib/pq v1.1.1
+	github.com/mattn/go-isatty v0.0.10 // indirect
+	github.com/tidwall/gjson v1.3.2 // indirect
+	github.com/ugorji/go v1.1.7 // indirect
+	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
+	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
