@@ -1,11 +1,22 @@
 package models
 
 import (
+	"errors"
 	"log"
 
 	"github.com/heroku/go-base/database"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// Grant rapresent the kind of grant type a User can have
+type Grant int
+
+const (
+	// Base is the basic user
+	Base Grant = iota
+	// Admin is the admin user
+	Admin
 )
 
 // User represent a User into the database
@@ -15,11 +26,17 @@ type User struct {
 	Surname  string `form:"surname" json:"surname" binding:"required"`
 	Email    string `form:"email" json:"email" binding:"required" gorm:"not null; unique_index;"`
 	Password string `form:"password" json:"password" binding:"required" gorm:"not null;"`
+	Grant    Grant  `gorm:"not null"`
 }
 
 // IsValid makes integrity check on the current User and return a boolean with the check result
 func (c *User) IsValid() (bool, error) {
-	// TODO: Check uniqueness
+	var user User
+	var i int
+	database.DB.Where("email = ?", c.Email).First(&user).Count(&i)
+	if i == 1 {
+		return false, errors.New("Duplicate value for the passed email")
+	}
 	return true, nil
 }
 
@@ -34,6 +51,9 @@ func (c *User) encryptPassword() {
 
 // Create creates a User and put it into the database, if an error occours during this process an error is returned
 func (c *User) Create() (bool, error) {
+	if valid, err := c.IsValid(); valid == false {
+		return valid, err
+	}
 	// Encript the password
 	c.encryptPassword()
 	if err := database.DB.Create(&c); err.Error != nil && database.IsUniqueConstraintError(err.Error) {
@@ -41,6 +61,11 @@ func (c *User) Create() (bool, error) {
 	}
 	database.DB.Save(&c)
 	return true, nil
+}
+
+// SetAdmin set the user as an administrator
+func (c *User) SetAdmin() {
+	c.Grant = Admin
 }
 
 // GetUserByID return the User that matches with the passed email, return nil if no User has that email

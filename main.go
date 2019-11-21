@@ -5,11 +5,19 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/heroku/go-base/database"
 	"github.com/heroku/go-base/middleware"
+	"github.com/heroku/go-base/models"
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 func main() {
+
+	database.Init()
+	database.MigrateTables(&models.User{})
+	defer database.Close()
+
+	go createAdminUser()
 
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -31,13 +39,16 @@ func main() {
 	}
 	router.Run(":" + port)
 
-	// router.GET("/", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{"message": "hey", "status": http.StatusOK})
-	// 	//c.HTML(http.StatusOK, "index.tmpl.html", nil)
-	// })
+}
 
-	// router.GET("/ciao", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{"message": "hey", "status": http.StatusOK})
-	// })
-
+func createAdminUser() {
+	admin := models.User{
+		Name:     "admin",
+		Surname:  "admin",
+		Email:    "admin@company.com",
+		Password: "fantasticPassword",
+	}
+	admin.SetAdmin()
+	_, err := admin.Create()
+	log.Println(err)
 }
