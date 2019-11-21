@@ -30,7 +30,7 @@ func main() {
 		log.Fatal("JWT Error:" + err.Error())
 	}
 
-	middleware.SetRoutes(router, authMiddleware)
+	middleware.SetRoutes(router, authMiddleware, middleware.GetAdminHandler())
 
 	port := os.Getenv("PORT")
 
@@ -38,7 +38,6 @@ func main() {
 		log.Fatal("$PORT must be set")
 	}
 	router.Run(":" + port)
-
 }
 
 func createAdminUser() {
