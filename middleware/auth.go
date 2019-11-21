@@ -5,6 +5,7 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/heroku/go-base/models"
 )
 
 var identityKey = "ID"
@@ -12,13 +13,6 @@ var identityKey = "ID"
 type login struct {
 	Username string `form:"username" json:"username" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
-}
-
-// User demo
-type User struct {
-	UserName  string
-	FirstName string
-	LastName  string
 }
 
 // GetJWTMiddleware return a middleware with utility function for routing
@@ -30,43 +24,38 @@ func GetJWTMiddleware() (*jwt.GinJWTMiddleware, error) {
 		MaxRefresh:  time.Hour,
 		IdentityKey: identityKey,
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if v, ok := data.(*User); ok {
+			if v, ok := data.(*models.User); ok {
 				return jwt.MapClaims{
-					identityKey: v.UserName,
+					identityKey: v.ID,
 				}
 			}
 			return jwt.MapClaims{}
 		},
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			return &User{
-				UserName: claims[identityKey].(string),
-			}
+			var user models.User
+			user, _ = models.GetUserByID(uint(claims[identityKey].(float64)))
+			return user
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var loginVals login
 			if err := c.ShouldBind(&loginVals); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
-			userID := loginVals.Username
-			password := loginVals.Password
-
-			if (userID == "admin" && password == "admin") || (userID == "test" && password == "test") {
-				return &User{
-					UserName:  userID,
-					LastName:  "Bo-Yi",
-					FirstName: "Wu",
-				}, nil
+			if customer, err := models.Authenticate(loginVals.Username, loginVals.Password); err != nil {
+				return nil, jwt.ErrFailedAuthentication
+			} else {
+				// Here is a good place to push the customer into redis or similar
+				return &customer, nil
 			}
-
-			return nil, jwt.ErrFailedAuthentication
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if v, ok := data.(*User); ok && v.UserName == "admin" {
+			if _, ok := data.(models.User); ok { //&& v.UserName == "admin" {
 				return true
 			}
 
 			return false
+
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
