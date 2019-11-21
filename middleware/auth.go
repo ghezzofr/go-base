@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/http"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -9,6 +10,7 @@ import (
 )
 
 var identityKey = "ID"
+var role = "role"
 
 type login struct {
 	Username string `form:"username" json:"username" binding:"required"`
@@ -27,6 +29,7 @@ func GetJWTMiddleware() (*jwt.GinJWTMiddleware, error) {
 			if v, ok := data.(*models.User); ok {
 				return jwt.MapClaims{
 					identityKey: v.ID,
+					role:        v.Grant,
 				}
 			}
 			return jwt.MapClaims{}
@@ -82,4 +85,17 @@ func GetJWTMiddleware() (*jwt.GinJWTMiddleware, error) {
 		TimeFunc: time.Now,
 	})
 	return authMiddleware, nil
+}
+
+func GetAdminHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims := jwt.ExtractClaims(c)
+		currentRole := models.Grant(claims[role].(float64))
+		if currentRole != models.Admin {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "error": "You must be admin to use this resource"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }

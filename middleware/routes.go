@@ -2,25 +2,21 @@ package middleware
 
 import (
 	"log"
-	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/heroku/go-base/controllers"
 	"github.com/heroku/go-base/models"
 )
 
 // SetRoutes set the entry points of the web application
-func SetRoutes(router *gin.Engine, authMiddleware *jwt.GinJWTMiddleware) {
+func SetRoutes(router *gin.Engine, authMiddleware *jwt.GinJWTMiddleware, adminHandler gin.HandlerFunc) {
 
 	// ###### V1 ########
 	v1 := router.Group("/v1")
 	{
 		// ###### AUTH #########
 		v1.POST("/login", authMiddleware.LoginHandler)
-		v1.GET("hi", func(c *gin.Context) {
-			c.JSON(200, gin.H{"message": "hey", "status": http.StatusOK})
-		})
-		// v1.POST("/signin", controllers.SignIn)
 
 		// ####### AUTH REQUIRED API #########
 		auth := v1.Group("/auth")
@@ -37,6 +33,10 @@ func SetRoutes(router *gin.Engine, authMiddleware *jwt.GinJWTMiddleware) {
 					"text":     "Hello World.",
 				})
 			})
+			auth.Use(adminHandler)
+			{
+				auth.POST("/signin", controllers.SignIn)
+			}
 		}
 
 	}
