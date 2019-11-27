@@ -19,6 +19,15 @@ const (
 	Admin
 )
 
+// BasicUser represent a user without password
+type BasicUser struct {
+	ID      uint
+	Name    string `form:"name" json:"name" binding:"required"`
+	Surname string `form:"surname" json:"surname" binding:"required"`
+	Email   string `form:"email" json:"email" binding:"required" gorm:"not null; unique_index;"`
+	Grant   Grant
+}
+
 // User represent a User into the database
 type User struct {
 	gorm.Model
@@ -30,42 +39,52 @@ type User struct {
 }
 
 // IsValid makes integrity check on the current User and return a boolean with the check result
-func (c *User) IsValid() (bool, error) {
+func (u *User) IsValid() (bool, error) {
 	var user User
 	var i int
-	database.DB.Where("email = ?", c.Email).First(&user).Count(&i)
+	database.DB.Where("email = ?", u.Email).First(&user).Count(&i)
 	if i == 1 {
 		return false, errors.New("Duplicate value for the passed email")
 	}
 	return true, nil
 }
 
-func (c *User) encryptPassword() {
+func (u *User) encryptPassword() {
 	// Generate "hash" to store from user password
-	hash, err := bcrypt.GenerateFromPassword([]byte(c.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatal(err)
 	}
-	c.Password = string(hash)
+	u.Password = string(hash)
 }
 
 // Create creates a User and put it into the database, if an error occours during this process an error is returned
-func (c *User) Create() (bool, error) {
-	if valid, err := c.IsValid(); valid == false {
+func (u *User) Create() (bool, error) {
+	if valid, err := u.IsValid(); valid == false {
 		return valid, err
 	}
 	// Encript the password
-	c.encryptPassword()
-	if err := database.DB.Create(&c); err.Error != nil && database.IsUniqueConstraintError(err.Error) {
+	u.encryptPassword()
+	if err := database.DB.Create(&u); err.Error != nil && database.IsUniqueConstraintError(err.Error) {
 		return false, err.Error
 	}
-	database.DB.Save(&c)
+	database.DB.Save(&u)
 	return true, nil
 }
 
 // SetAdmin set the user as an administrator
-func (c *User) SetAdmin() {
-	c.Grant = Admin
+func (u *User) SetAdmin() {
+	u.Grant = Admin
+}
+
+// SetAdmin set the user as an administrator
+func (u *User) GetBasicUser() (bu BasicUser) {
+	bu.Name = u.Name
+	bu.Surname = u.Surname
+	bu.ID = u.ID
+	bu.Grant = u.Grant
+	bu.Email = u.Email
+	return
 }
 
 // GetUserByID return the User that matches with the passed email, return nil if no User has that email

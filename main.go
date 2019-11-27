@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 	"github.com/heroku/go-base/database"
 	"github.com/heroku/go-base/middleware"
 	"github.com/heroku/go-base/models"
@@ -19,12 +20,18 @@ func main() {
 
 	go createAdminUser()
 
+	RedisConnection, err := redis.DialURL(os.Getenv("REDIS_URL"))
+	if err != nil {
+		// Handle error
+	}
+	defer RedisConnection.Close()
+
 	router := gin.New()
 	router.Use(gin.Logger())
 	// router.LoadHTMLGlob("web/templates/*.tmpl.html")
 	// router.Static("/web/static", "static")
 
-	authMiddleware, err := middleware.GetJWTMiddleware()
+	authMiddleware, err := middleware.GetJWTMiddleware(RedisConnection)
 
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())

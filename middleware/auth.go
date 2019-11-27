@@ -1,11 +1,14 @@
 package middleware
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 	"github.com/heroku/go-base/models"
 )
 
@@ -18,7 +21,7 @@ type login struct {
 }
 
 // GetJWTMiddleware return a middleware with utility function for routing
-func GetJWTMiddleware() (*jwt.GinJWTMiddleware, error) {
+func GetJWTMiddleware(RedisConnection redis.Conn) (*jwt.GinJWTMiddleware, error) {
 	authMiddleware, _ := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "test zone",
 		Key:         []byte("secret key"),
@@ -37,7 +40,17 @@ func GetJWTMiddleware() (*jwt.GinJWTMiddleware, error) {
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
 			var user models.User
-			user, _ = models.GetUserByID(uint(claims[identityKey].(float64)))
+
+			s, err := redis.String(RedisConnection.Do("GET", uint(claims[identityKey].(float64))))
+
+			if err != nil {
+				user, _ = models.GetUserByID(uint(claims[identityKey].(float64)))
+				fmt.Println("User does not exist")
+			} else {
+				err = json.Unmarshal([]byte(s), &user)
+				fmt.Println(s)
+			}
+
 			return user
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
@@ -48,6 +61,9 @@ func GetJWTMiddleware() (*jwt.GinJWTMiddleware, error) {
 			if customer, err := models.Authenticate(loginVals.Username, loginVals.Password); err != nil {
 				return nil, jwt.ErrFailedAuthentication
 			} else {
+				basicUser := customer.GetBasicUser()
+				json, _ := json.Marshal(basicUser)
+				RedisConnection.Do("SET", basicUser.ID, json)
 				// Here is a good place to push the customer into redis or similar
 				return &customer, nil
 			}

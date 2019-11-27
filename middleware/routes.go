@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"log"
+	"os"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 	"github.com/heroku/go-base/controllers"
 	"github.com/heroku/go-base/models"
 )
@@ -27,6 +29,11 @@ func SetRoutes(router *gin.Engine, authMiddleware *jwt.GinJWTMiddleware, adminHa
 			auth.GET("/hello", func(c *gin.Context) {
 				claims := jwt.ExtractClaims(c)
 				user, _ := c.Get(identityKey)
+				conn, _ := redis.DialURL(os.Getenv("REDIS_URL"))
+				defer conn.Close()
+				conn.Do("PUBLISH", "test", "ciao")
+				conn.Flush()
+
 				c.JSON(200, gin.H{
 					"userID":   claims[identityKey],
 					"userName": user.(models.User).Name,
