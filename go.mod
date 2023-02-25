@@ -12,11 +12,10 @@ require (
 	github.com/heroku/x v0.0.11
 	github.com/jinzhu/gorm v1.9.11
 	github.com/json-iterator/go v1.1.8 // indirect
-	github.com/labstack/gommon v0.2.8
 	github.com/lib/pq v1.1.1
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/tidwall/gjson v1.3.2 // indirect
 	github.com/ugorji/go v1.1.7 // indirect
-	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
+	golang.org/x/crypto v0.1.0
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
